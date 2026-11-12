@@ -1,0 +1,48 @@
+site_name: bbstage
+site_description: Node-local staging + asynchronous drain engine for ADIOS2 (BP5)
+site_url: https://denisbertini.github.io/bbstage-docs/
+repo_url: https://github.com/denisbertini/ADIOS2
+edit_uri: https://github.com/denisbertini/bbstage-docs/edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue grey
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue grey
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Parameters: parameters.md
+  - Semantics & durability: semantics.md
+  - Tuning by measurement: tuning.md
+  - Diagnostics: diagnostics.md
+  - Methodology: methodology.md
+  - FAQ: faq.md
