@@ -5,6 +5,57 @@
       deployments, 2026). Constants here are **site facts, not universal
       laws** — the transferable part is the procedure: [Methodology](methodology.md).
 
+## The main equation {: #equation}
+
+One equation states what the engine costs the application, and every other
+section of this page is a coefficient or an audit of one of its symbols.
+Per rank, per checkpoint of size $S$, with spill bandwidth $B$ to the
+staging tier, backlog $Q$, watermark $W$, and store drain capacity $C$:
+
+$$
+t_{\text{ckpt}} \;=\; \underbrace{\frac{S}{B}}_{\text{spill — what you always pay}}
+\;+\; \underbrace{\max\!\left(0,\; \frac{Q - W}{C}\right)}_{\text{backpressure — only if you overran}}
+\qquad\text{and at exit}\qquad
+t_{\text{bill}} \;=\; \frac{Q}{C}
+$$
+
+The engine's whole design goal fits in the middle term:
+**keep the backlog under the watermark and the store's speed and jitter
+appear nowhere in the application's cost** — the checkpoint costs spill
+speed, full stop. The store re-enters only through the terms the operator
+controls and measures:
+
+| symbol | what decides it | measured value | audited in |
+|---|---|---|---|
+| $B$ | tier class + preallocation | tmpfs 8–50 GiB/s; NVMe Gen3 1.9, Gen4 5.5 GiB/s | [staging tier](#staging-tier) |
+| $C$ | store currency × width × **file size** | per-file: $f/(t_0 + f/r)$, $t_0≈0.24$ s, $r≈910$ MiB/s | [currency](#currency), [lane constant](#lane) |
+| $Q$ | demand vs $C$ over the run | tail $=0$ in every in-envelope arm; 236 GiB absorbed while probes read 1–6 MiB/s (j13606) | [drain-stats](diagnostics.md#drain-stats) |
+| $W$ | operator | default 1 GiB/rank is measured-sane; 64 GiB banks backlog instead | [watermark sizing](#watermark) |
+
+Two consequences worth stating as corollaries because they are the two most
+misunderstood behaviors of any async drain design:
+
+1. **Steady state exists iff demand ≤ $C$** — then $Q$ stays bounded by
+   construction, the exit bill is zero, and per-checkpoint time is
+   invariant to offered demand (verified flat across 4× demand changes,
+   both stores). Above that inequality there is no engine — staged or
+   native — that can keep the store out of the application's wall time;
+   the equation's max-term simply makes the exposure *visible at a defined
+   boundary* instead of mid-kernel.
+2. **The benefit versus the native engine is a ratio, not a constant:**
+   native costs $S / v_{\text{store}}$ (its jitter included), bbstage costs
+   $S/B$ in-envelope. On a quiet store $v_{\text{store}} \approx B$ (the
+   page cache absorbs both) and the ratio is **1.0 — the correct result**;
+   under contention $v_{\text{store}}$ collapses while $B$ does not, and
+   the measured ratio reached **3.4×** (8×32 ranks, 64 GiB/checkpoint,
+   store at 2.5 GiB/s native: 7.7 s vs 26.5 s per checkpoint).
+
+!!! tip "How to use this page"
+      Measure your four symbols with the [probes](diagnostics.md#probes)
+      on arrival; plug into the equation; that is your predicted
+      checkpoint cost and exit bill **before** your first production run —
+      and the delta against your observed run is the diagnostic signal.
+
 ## The three absorption layers
 
 Anything that "absorbs writes fast" does it at one of three layers — and
@@ -38,7 +89,7 @@ near-linearly with writer count (~5–6 MiB/s/stream × width); an
 archive-class store saturated at ~640 MiB/s from 256 streams up. **Measure
 your store with the engine's currency and your engine's width.**
 
-## The drain lane constant is not a constant
+## The drain lane constant is not a constant {: #lane}
 
 Per-file drain throughput fits
 
@@ -103,7 +154,7 @@ depth; no O_DIRECT/io_uring/SPDK recipe beat the NAND ceiling in any test.
   not A/B on a good day and conclude the engine is dead weight; do not
   benchmark on a bad store and conclude it is free.
 
-## Watermark sizing
+## Watermark sizing {: #watermark}
 
 Default 1 GiB/rank is deliberate: it self-throttles the app when the store
 cannot keep up and keeps tier usage and the exit tail small. Raising it

@@ -37,7 +37,7 @@ bbstage rank 17 drain-stats tail:       2 jobs, 1.00 GiB in 4.0 s = 256 MiB/s
 3. **Was the tier the constraint?** `spill-copy` large while drain idle ⇒
    tier-bound ([tier table](tuning.md#staging-tier)).
 
-## Store probes that do not lie
+## Store probes that do not lie {: #probes}
 
 ```bash
 # floor currency (O_DIRECT, qd1): reports the OST-digestion state,

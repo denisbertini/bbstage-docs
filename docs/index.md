@@ -27,6 +27,11 @@ path.](assets/bbstage-architecture.jpg){ loading=lazy }
 
 ## Where the numbers come from
 
+The whole story in one line — and one [main equation](tuning.md#equation):
+a checkpoint costs `S/B` (spill ÷ tier speed) as long as demand stays
+within drain capacity and backlog under the watermark; the store's speed
+and jitter appear nowhere else in the application's wall time.
+
 Every performance statement in these pages is tied to a measurement on real
 Lustre systems (job IDs in [Tuning by measurement](tuning.md) and
 [Methodology](methodology.md)). The headline constants, so you know what to
