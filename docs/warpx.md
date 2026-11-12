@@ -18,13 +18,10 @@ the integration has two hooks:
 
 ## The three moving parts
 
-```
-WarpX inputs          openPMD-api              ADIOS2 (fork build)
-diag1.format  ──────▶ backend: ADIOS2 ────────▶ engine type: "bbstage"
-diag1.openpmd_config ─▶ engine.type              │
-                        (JSON)                   ▼
-                               BBSTAGE_* env vars (watermark, staging dir, …)
-```
+![WarpX integration: diag1.format and diag1.openpmd_config feed the
+openPMD-api ADIOS2 backend and its engine.type JSON, which selects the
+bbstage engine in the fork build; BBSTAGE_* environment variables tune
+it.](assets/warpx-integration.jpg){ loading=lazy }
 
 * The **fork's `libadios2`** must be the one openPMD-api loads — this is
   the single most common failure: WarpX runs, writes plain BP5, and
