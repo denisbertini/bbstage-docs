@@ -8,14 +8,10 @@ sequential writes **while the application computes**. The output is
 standard BP5 — read it back with the stock `bp5` engine, `bpls`, or any
 BP5 reader.
 
-```
-          app step                    background, off the critical path
-    ┌────────────────┐ spill (RAM/disk speed)   ┌──────────────┐ sequential ┌─────────┐
-    │  BeginStep →   ├─────────────────────────▶│  staging     │───────────▶│  final  │
-    │  Put → EndStep │                          │  tier (local)│  lanes     │  store  │
-    └────────────────┘   returns here ◀─────────┴──────────────┘            └─────────┘
-                     the store's speed and jitter stop being the app's problem
-```
+![bbstage architecture: the checkpoint step spills to the node-local
+staging tier at RAM/disk speed and returns; background drain lanes copy to
+the shared filesystem, off the critical
+path.](assets/bbstage-architecture.jpg){ loading=lazy }
 
 !!! info "What it is — and is not"
 
