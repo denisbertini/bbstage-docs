@@ -42,6 +42,7 @@ nav:
   - Quickstart: quickstart.md
   - Parameters: parameters.md
   - Semantics & durability: semantics.md
+  - WarpX recipe: warpx.md
   - Tuning by measurement: tuning.md
   - Diagnostics: diagnostics.md
   - Methodology: methodology.md
