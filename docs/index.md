@@ -48,7 +48,7 @@ Based on benchmarks on production Lustre clusters (see [Tuning by measurement](t
 
 ## Background & Related Tools
 
-* **Origin:** **bbstage** builds on the burst-buffer staging concept introduced by *BBView* (Koyama & Tatebe, REX-IO 2025), re-engineered directly inside ADIOS2 so data is already formatted in BP5 layout before staging.
+* **Origin:** **bbstage** builds on the burst-buffer staging concept introduced by **BBView** — Sohei Koyama and Osamu Tatebe, *"BBView: A View-Aware Burst-Buffer Mechanism for MPI-IO"*, Proc. Workshop on Re-envisioning Extreme-Scale I/O for Emerging Hybrid HPC Workloads (REX-IO), IEEE Cluster 2025, pp. 1–9, [doi:10.1109/CLUSTERWorkshops65972.2025.11164194](https://doi.org/10.1109/CLUSTERWorkshops65972.2025.11164194) ([code](https://github.com/tsukuba-hpcs/bbview)); extended journal version: *"BBView: A burst buffer for MPI file views that performs bulk writes"*, IEICE Trans. Inf. & Syst. E110-D(1), [doi:10.1587/transinf.2026PAP0001](https://doi.org/10.1587/transinf.2026PAP0001) (free access). BBView buffers MPI-IO file views below MPI and scatters them with a background daemon; **bbstage** re-engineered the absorb-then-drain idea inside ADIOS2 itself, so data is already serialized in final BP5 layout before staging and no daemon is needed.
 * **bblite:** If you have legacy codes that do not use ADIOS2, check out [bblite](https://github.com/denisbertini/bblite), a sibling tool that brings similar background staging to standard POSIX file writes.
 
 [:material-book-open-variant: Get started — Quickstart](quickstart.md)
