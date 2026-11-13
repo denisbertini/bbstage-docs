@@ -40,9 +40,11 @@ Based on benchmarks on production Lustre clusters (see [Tuning by measurement](t
 
 **Why you cannot divide these numbers by each other.** The local rows are *per-node ceilings shared by all ranks*; the filesystem row is a *per-rank* rate — and the two never compete for the same moment in time: your simulation always pays the local speed, while the filesystem speed only governs how fast the background copy proceeds. The comparison that matters is a single inequality — *can the background keep up with your checkpoint cadence?*
 
-```
-checkpoint size ÷ interval between checkpoints   ≤   ranks per node × filesystem rate per rank
-```
+$$
+\underbrace{\frac{S}{\Delta t}}_{\text{checkpoint size} \div \text{interval}}
+\;\leq\;
+\underbrace{R \times v_{\text{rank}}}_{\text{ranks per node} \times \text{store rate per rank}}
+$$
 
 Example: 8 ranks/node × 0.24 GiB/s ≈ **2 GiB/s of sustainable checkpoint demand per node**. Stay below the line and the shared filesystem's speed and stalls appear *nowhere* in your simulation's runtime. Push past it and bbstage makes you wait at checkpoint boundaries, visibly and on purpose — never mid-solve. In the 3.4× job above, each node demanded a rate the contended store could not serve natively, yet still ran at its local-storage speed because ~1.2 GiB/s/node drained in the background.
 
