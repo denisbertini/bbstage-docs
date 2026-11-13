@@ -1,59 +1,54 @@
 # bbstage
 
-**bbstage** is a write-only ADIOS2 engine that speeds up application checkpoints. 
+**bbstage** is a write-only [ADIOS2](https://github.com/ornladios/ADIOS2) engine designed to prevent slow cluster filesystems (like Lustre or GPFS) from stalling your simulation during checkpointing or diagnostics output.
 
-Instead of waiting on a slow shared filesystem, `bbstage` writes each checkpoint step to fast local storage (like node-local NVMe or RAM). Background workers then copy that data to your final storage in large, sequential writes while your application keeps computing.
+Instead of pausing your physics code while data is written across the network to the shared filesystem, **bbstage** saves each step immediately to ultra-fast local storage on the compute node (such as `/dev/shm` RAM disk or local NVMe SSD). Background threads then copy your data to the permanent filesystem **while your simulation continues computing the next time step**.
 
-The output uses the standard **BP5** format. You can read your data back with the default `bp5` engine, `bpls`, or any standard BP5 reader.
+Your output is saved in standard **BP5 format**. You do not need to change your simulation code or your analysis scripts—you can read the files back using the standard `bp5` engine, `bpls`, Python, ParaView, or VisIt.
 
-![bbstage architecture diagram](assets/bbstage-architecture.jpg)
-*Figure: Checkpoint steps write to fast local storage and return immediately. Background workers move the data to the shared filesystem off the critical path.*
+![bbstage architecture: the simulation writes to fast node-local storage and immediately resumes computing, while background threads copy the data to the shared filesystem.](assets/bbstage-architecture.jpg){ loading=lazy }
 
-!!! info "When to use bbstage"
-    * **What it is:** Protection against shared storage slowdowns. When storage traffic is heavy, `bbstage` absorbs the delay in the background so your simulation does not stall.
-    * **What it is not:** A magic speedup when the filesystem is idle. Because `bbstage` makes an extra local copy of every checkpoint, it matches normal `bp5` speeds on quiet days. Its main value is preventing sudden slowdowns, improving metadata behavior, and managing heavy I/O traffic.
+!!! tip "When should you use bbstage?"
 
----
+    * **Use it to protect against I/O stalls:** Shared cluster filesystems fluctuate in speed depending on what other jobs are running. When the filesystem slows down, **bbstage** absorbs the delay in the background so your simulation wall-time stays predictable.
+    * **What to expect on a quiet cluster:** If the shared filesystem is completely idle and fast, **bbstage** will perform roughly the same as standard BP5. Its main advantage is eliminating unpredictable, multi-minute I/O hangs during busy cluster periods.
 
-## Close Modes
+## Choosing how checkpoints finish (`CloseMode`)
 
-You can choose when `Close()` returns to your application depending on your safety needs:
+When your simulation finishes writing a checkpoint and closes the file, you can choose between two safety modes depending on your workflow:
 
-| Mode | When `Close()` returns | Data safety on return |
+| Mode | When does your code move on? | Data safety guarantee | Best used for... |
+| :--- | :--- | :--- | :--- |
+| **`durable`** *(default)* | Waits until all data has finished copying to the permanent filesystem. | **100% permanent.** Data is completely safe on the shared filesystem when `Close()` returns. | **Final outputs** or critical checkpoints before a job ends. |
+| **`staged`** | Returns immediately as soon as data reaches the compute node's local storage. | **In-transit.** Background threads are still copying data to the permanent filesystem while your simulation runs. | **Frequent mid-run checkpoints** where maximum simulation speed is the priority. |
+
+!!! warning "Important rule for `staged` mode"
+    If you use `staged` mode, **do not read, move, or delete** the output directory until a file named **`bbstage.final`** appears inside it. That marker file guarantees all background transfers have finished and your data is safely on the permanent filesystem. See [Semantics](semantics.md) for details.
+
+## What kind of speedup can you expect?
+
+With **bbstage**, the time your simulation spends waiting on I/O depends only on the speed of your compute node's local storage—not the shared cluster filesystem. As long as your checkpoints are spaced out enough for the background threads to keep up, network filesystem slowdowns will not affect your simulation runtime. (In measured terms this is `S / B` — size divided by local storage speed — [the main equation](tuning.md#equation) of the tuning chapter.)
+
+Based on benchmarks on production Lustre clusters (see [Tuning by measurement](tuning.md)):
+
+| Storage Layer | Speed (as benchmarked here) | Impact on Your Simulation |
 | :--- | :--- | :--- |
-| **`durable`** *(default)* | After all data is copied and committed to final storage. | **Complete.** All bytes are safely on the final filesystem. |
-| **`staged`** | As soon as the final step reaches local storage. | **Partial.** Background copies may still be running. A checkpoint is complete only when a `bbstage.final` file appears inside it — key readers, archivers, and any delete-on-restart scripts on that marker. See [Semantics & Durability](semantics.md). |
+| **Node RAM (`/dev/shm`)** | ~8 – 50 GiB/s | Your simulation sees this speed when writing checkpoints. |
+| **Node Local NVMe SSD** | ~1.9 – 5.5 GiB/s | Your simulation sees this speed when writing checkpoints. |
+| **Shared Cluster Filesystem** | ~0.24 – 0.43 GiB/s per stream | Handled quietly in the background while your physics solver runs. |
+| **Overall Checkpoint Time** | **Up to 3.4× faster** under heavy cluster load | Eliminates long I/O stalls during busy cluster hours (**1.0×** when the cluster is empty). |
 
----
+*(Note: the filesystem numbers above are facts about the clusters we benchmarked, not universal constants — probe your own cluster the same way, see [Methodology](methodology.md). And if you stage data in `/dev/shm`, the temporary files count toward your job's RAM limit. See [Quickstart](quickstart.md) for guidance on setting memory limits safely.)*
 
-## Performance Overview
+## How it works with your code
 
-As long as your checkpoints fit within the local buffer and background copy limits, a checkpoint only costs `S / B` (data size divided by local storage speed). Slowdowns on the shared filesystem will not affect your application's runtime. That statement is [the main equation](tuning.md#equation) of this page's measurements — everything below quantifies its terms.
+* **Zero code changes:** If your simulation already uses ADIOS2 (or middleware like **openPMD-api**, used by WarpX and PIConGPU), you can enable **bbstage** by changing the engine name — in your own ADIOS2 calls or XML/JSON configuration, or, for openPMD-based codes, in the middleware's config file (see the [WarpX recipe](warpx.md)). Tuning parameters can also travel as environment variables.
+* **No extra daemons to launch:** Everything runs automatically inside your MPI job's existing processes.
+* **Node aggregation (`Aggregate=on`):** For large runs using many MPI ranks per node, **bbstage** can automatically combine outputs on each node to avoid overwhelming the shared filesystem with thousands of small files.
 
-The numbers below come from real benchmarks on Lustre filesystems (see [Tuning by Measurement](tuning.md) and [Methodology](methodology.md) for job IDs):
+## Background & Related Tools
 
-| Metric | Measured Speed | What affects it |
-| :--- | :--- | :--- |
-| **Local staging speed** | `1.9 – 5.5 GiB/s` (NVMe)<br>`8 – 50 GiB/s` (`/dev/shm`) | Node hardware (test your node when a job starts). |
-| **Background drain speed** | `0.24 – 0.43 GiB/s` per worker<br>*(~3× faster for ~1 GiB files)* | Target filesystem path and file size. |
-| **Shared store capacity** | `Per-stream rate × stream count` | I/O concurrency (buffered vs. `O_DIRECT` is ~25× different), stream count, and store load. |
-| **Checkpoint speedup** | **`3.4×` faster** under heavy load<br>**`1.0×`** on an idle store | Current traffic on the shared filesystem. |
+* **Origin:** **bbstage** builds on the burst-buffer staging concept introduced by *BBView* (Koyama & Tatebe, REX-IO 2025), re-engineered directly inside ADIOS2 so data is already formatted in BP5 layout before staging.
+* **bblite:** If you have legacy codes that do not use ADIOS2, check out [bblite](https://github.com/denisbertini/bblite), a sibling tool that brings similar background staging to standard POSIX file writes.
 
----
-
-## Related Projects
-
-* **[bblite](https://github.com/denisbertini/bblite):** Applies this same local-staging design below the application layer as a lightweight `LD_PRELOAD` library for POSIX I/O.
-* **BBView** *(Koyama & Tatebe, REX-IO 2025)*: The research lineage that inspired `bbstage`. Unlike BBView, `bbstage` runs entirely inside your application process and writes data directly in BP5 format, so background workers only need to copy bytes and commit metadata.
-
----
-
-## Project Status & Repository Layout
-
-`bbstage` is maintained as a clean, minimal fork of ADIOS2 (`master = upstream + bbstage`), making it easy to stay up to date with upstream releases.
-
-* **Engine code:** `source/adios2/engine/bbstage/` (plus minor registration edits)
-* **Tests:** `testing/adios2/engine/bbstage/` (enable with `-DADIOS2_BUILD_TESTING=ON`)
-* **Capabilities:** Write-only engine using POSIX local staging. Use the standard `bp5` engine for reading.
-
-[Get started with the Quickstart guide →](quickstart.md)
+[:material-book-open-variant: Get started — Quickstart](quickstart.md)
