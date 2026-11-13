@@ -16,16 +16,23 @@ e.Close();
 
 When engines are reached through middleware that cannot pass engine
 parameters (e.g. WarpX checkpoints via openPMD-api), environment variables
-act as fallbacks — precedence: engine parameter > environment > default:
+act as fallbacks — precedence: engine parameter > environment > default.
+These are the ones anyone needs; every engine parameter also has an env
+form, documented with its full semantics in
+[Parameters](parameters.md):
 
-| Environment | Parameter |
+| Environment | Parameter (definition) |
 |---|---|
-| `BBSTAGE_CLOSE_MODE` (`durable`/`staged`) | `CloseMode` |
-| `BBSTAGE_STAGING_WATERMARK_MB` | `StagingWatermarkMB` |
-| `BBSTAGE_DRAIN_STREAMS` | `DrainStreams` |
-| `BBSTAGE_AGGREGATE` (`on`/`off`) | `Aggregate` |
-| `BBSTAGE_STAGING_PREALLOCATE` (`on`/`off`) | `StagingPreallocate` |
-| `BBSTAGE_TIMING` (`1`) | — per-phase timings + drain-stats on stderr |
+| `BBSTAGE_CLOSE_MODE` (`durable`/`staged`) | [`CloseMode`](parameters.md) — what `Close()` waits for |
+| `BBSTAGE_STAGING_WATERMARK_MB` | [`StagingWatermarkMB`](parameters.md) — per-rank backlog cap, the backpressure knob |
+| `BBSTAGE_AGGREGATE` (`on`/`off`) | [`Aggregate`](parameters.md) — node co-write; CPU-fat runs only (GPU: leave off) |
+| `BBSTAGE_TIMING` (`1`) | diagnostics only — per-phase timings + drain-stats on stderr |
+
+Rarely-needed knobs (`DrainStreams`, `StagingPreallocate`) deliberately
+stay out of a quick start: both ship dormant — one was measured *neutral
+and writer-taxing* at any value above default, the other is a no-op on the
+standard `/tmp` tier. Their definitions and verdicts:
+[Parameters](parameters.md), [Tuning](tuning.md#drain-k-a-measured-demotion).
 
 ## A recommended staging-mode recipe
 
