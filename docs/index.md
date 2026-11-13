@@ -33,7 +33,7 @@ Based on benchmarks on production Lustre clusters (see [Tuning by measurement](t
 
 | Storage Layer | Speed (as benchmarked here) | Measured per... | Impact on Your Simulation |
 | :--- | :--- | :--- | :--- |
-| **Node RAM (`/dev/shm`)** | ~8 GiB/s per writing rank, ~50 GiB/s with `StagingPreallocate=on` | **Per rank** — it scales with ranks until memory bandwidth caps the node | Your simulation sees this speed when writing checkpoints. |
+| **Node RAM (`/dev/shm`)** | ~8 GiB/s plain, ~50 GiB/s with `StagingPreallocate=on` — the ~6× ratio is the measured fact | **Width-dependent** — an unprepared tmpfs write pays a page fault per 4 KiB (the fault path, not RAM, is the wall); `fallocate` removes it, so the spill runs at memory-copy speed, which then adds up over the node's ranks | Your simulation sees this speed when writing checkpoints. |
 | **Node Local NVMe SSD** | ~1.9 GiB/s (PCIe Gen3 enterprise drive, Intel P4510 class) – ~5.5 GiB/s (Gen4, Kingston DC class) | **Node** — drive's sustained-write ceiling, shared by all ranks; 4–8 ranks already saturate it | Your simulation sees this speed when writing checkpoints. (The PCIe generation marks the drive class; the actual limit is the NAND, not the slot — hence "probe your node".) |
 | **Shared Cluster Filesystem** | ~0.24 – 0.43 GiB/s, rising to ~0.7 GiB/s for ~1 GiB checkpoint files | **One rank's background stream** — a node's total is ranks × this | Handled quietly in the background while your physics solver runs. |
 | **Overall Checkpoint Time** | **Up to 3.4× faster** under heavy cluster load (**1.0×** when the cluster is empty) | **A full job**: 8 nodes × 32 ranks, 64 GiB per checkpoint (7.7 s vs 26.5 s) | Eliminates long I/O stalls during busy cluster hours. |

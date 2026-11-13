@@ -132,7 +132,7 @@ targets, per-stream client caps), absent from everything measured.
 
 | tier / node | sustained | width scaling | notes |
 |---|---|---|---|
-| `/dev/shm` (tmpfs) | ~8 GiB/s plain, ~50 with `StagingPreallocate=on` | — | pinned RAM; budget: `(watermark+backlog)×ranks + app` |
+| `/dev/shm` (tmpfs) | ~8 GiB/s plain, ~50 with `StagingPreallocate=on` (~6×; the ratio is the measured constant, the absolutes depend on how many ranks ran — re-probe per node) | plain = page-fault-limited (fault per 4 KiB on first touch); preallocated = copy-limited | pinned RAM; budget: `(watermark+backlog)×ranks + app`; fallocate converts overrun into a fast explained error |
 | Gen3 enterprise NVMe (Intel P4510 class) | **1.9 GiB/s** | none (1≡16 streams, 1M≡4M — NAND-bound) | O_DIRECT ≡ buffered; async I/O cannot help |
 | Gen4 enterprise NVMe (Kingston DC class) | **5.5 GiB/s** | qd1 issue-limited (3.3); 4 streams ≡ 16; bs=4M alone ≈ ceiling | the engine's 8 ranks/node are already 8 streams — at the ceiling without any code change |
 | consumer DRAM-less NVMe | 2.1 → 0.35 GiB/s after a few GiB | — | **SLC cliff**: a second checkpoint can land on it; gate NVMe staging on a sustained-write probe |
