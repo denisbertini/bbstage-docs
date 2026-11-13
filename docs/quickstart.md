@@ -39,26 +39,8 @@ absorbs whatever spills over — degrading *gracefully* instead of fatally.
 BBSTAGE_TIMING=1 srun ... ./your_app      # per-rank timing + drain-stats on stderr
 ```
 
-**Opt into `/dev/shm` only when the node justifies it** — no local NVMe,
-a weak sustained one (~1.9 GiB/s enterprise Gen3, or a consumer drive
-with a measured SLC cliff), or genuinely sustained multi-GiB-per-step
-spills beyond what the page cache can hide — **and** when the job's
-memory allocation covers:
-
-```
-(watermark + backlog) × ranks_per_node + application_footprint
-```
-
-```bash
-export BBSTAGE_STAGING_PREALLOCATE=on     # tmpfs-only: strips the spill's page-fault
-                                          # tax (1.4-6x, node-dependent) and turns a
-                                          # RAM overrun into a fast, explained fallocate
-                                          # error instead of an OOM
-```
-
-tmpfs pages are *pinned RAM*, not reclaimable page cache — an overrun
-OOMs. That failure-mode asymmetry, not raw speed, is why `/tmp` is the
-default recommendation. See [Tuning](tuning.md#staging-tier).
+No other configuration is intended for normal use. See
+[Tuning](tuning.md#staging-tier) for what the tier does under load.
 
 ## Reading the output
 

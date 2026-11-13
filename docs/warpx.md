@@ -54,9 +54,6 @@ export APPTAINER_CONFIGDIR=/tmp/$USER
 #       engine parameters; parameter > env > default) ─────────────────────
 export BBSTAGE_CLOSE_MODE=staged        # start with "durable" (below) to
                                         # validate semantics before graduating
-export BBSTAGE_STAGING_PREALLOCATE=on   # removes tmpfs page-fault tax (1.4-6x,
-                                        # node-dependent), fail-fast on
-                                        # RAM overrun (see budget, section below)
 export BBSTAGE_AGGREGATE=on             # CPU runs with many ranks/node:
                                         # WarpX diags = one file per step per
                                         # quantity: the file-count case where
@@ -72,8 +69,8 @@ export BBSTAGE_TIMING=1                 # drain-stats + phase timings on stderr
 srun --export=ALL bash -c "
   grep -qa 'bbstage rank' $FORK/build/lib64/libadios2_core.so.* \
     || { echo 'ABORT: this libadios2 has no bbstage'; exit 1; }
-  a=\$(df -BG --output=avail /dev/shm | tail -1 | tr -dc 0-9)
-  [ \"\$a\" -ge 30 ] || { echo \"ABORT: /dev/shm only \${a}G\"; exit 1; }"
+  a=\$(df -BG --output=avail /tmp | tail -1 | tr -dc 0-9)
+  [ \"\$a\" -ge 100 ] || { echo \"ABORT: /tmp only \${a}G free\"; exit 1; }"
 
 # ── 3. openPMD engine selection (the engine.type passthrough) ────────────
 cat > $SLURM_SUBMIT_DIR/bbstage.json <<'EOF'
@@ -96,19 +93,23 @@ srun --export=ALL apptainer exec $CONT bash -c '
 *The per-rank stderr is not style: 64 ranks on one stderr shred the
 `bbstage`/`drain-stats` lines into confetti ([diagnostics](diagnostics.md)).*
 
-## Staging budget (tmpfs recipe)
+## Staging budget (the `/tmp` tier)
 
-`/dev/shm` is pinned RAM. The job's memory allocation must cover:
+The staging tier is each node's local disk, so the budget is **disk
+space**, sized so the worst-case staged backlog plus headroom fits in free
+`/tmp`:
 
 ```
-(watermark + backlog) × ranks_per_node + WarpX footprint
+watermark_MB × ranks_per_node  ≤  ~half of free /tmp
 ```
 
-With the default 1 GiB watermark × 32 ranks = **32 GiB of staging headroom**
-— check this against your `--mem-per-cpu`, or lower the watermark, or use
-`/tmp` (NVMe tier; degrades gracefully where tmpfs would OOM). With
-`StagingPreallocate=on`, overruns fail fast with an explained `fallocate`
-error instead of an OOM mid-run.
+The `≤ half` keeps the page cache room to absorb bursts (the reason a
+disk tier performs like RAM at normal cadences). The default 1 GiB
+watermark × 32 ranks = **32 GiB** is trivial on any NVMe; if you raise it
+for heavy checkpoint cadences — e.g. 64 GiB/rank × 8 ranks = 512 GiB on a
+~1.3 TiB `/tmp`, ≈ 39% — check `df /tmp` on your node class first. Under
+pressure a disk-backed tier degrades gracefully: it slows the watermark,
+it does not kill the job.
 
 ## Durability and restarts (the WarpX-specific rule)
 

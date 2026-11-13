@@ -47,7 +47,7 @@ $$
 
 Example: 8 ranks/node × 0.24 GiB/s ≈ **2 GiB/s of sustainable checkpoint demand per node**. Stay below the line and the shared filesystem's speed and stalls appear *nowhere* in your simulation's runtime. Push past it and bbstage makes you wait at checkpoint boundaries, visibly and on purpose — never mid-solve. In the 3.4× job above, each node demanded a rate the contended store could not serve natively, yet still ran at its local-storage speed because ~1.2 GiB/s/node drained in the background.
 
-*(Notes: the filesystem numbers above are facts about the clusters we benchmarked, not universal constants — probe your own cluster the same way, see [Methodology](methodology.md). Staging on the node's local disk is the standard, zero-configuration choice; the advanced RAM-disk variant and its job-memory accounting are covered in [Quickstart](quickstart.md).)*
+*(Note: the filesystem numbers above are facts about the clusters we benchmarked, not universal constants — probe your own cluster the same way, see [Methodology](methodology.md).)*
 
 ## How it works with your code
 

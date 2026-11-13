@@ -42,20 +42,11 @@ No, unless you can point at a per-*file* throughput throttle on your
 store. Measured A/B in its own best regime: flat in k, ~20% writer tax,
 variance up. [Tuning](tuning.md#drain-k-a-measured-demotion).
 
-**`/dev/shm` or `/tmp` for `BurstBufferPath`?**
-`/tmp` is the recommended default tier: terabytes of capacity, overflow
-handled gracefully (the kernel just writes back to the local disk), and
-for modest backlogs its page cache already behaves like RAM — so on a
-healthy node you give up little and risk much less. `/dev/shm` +
-`StagingPreallocate=on` is the **special case**: worth it when the local
-NVMe is absent or measurably weak (Gen3-class sustained ~1.9 GiB/s,
-consumer drives with SLC cliffs) or your spills are sustained and huge —
-and only if the job's memory allocation covers
-`(watermark+backlog)×ranks+app`, because tmpfs pages are pinned RAM and
-an overrun OOMs the job where `/tmp` would merely slow down
-([Tuning](tuning.md#staging-tier)). The choice is really about **who
-governs the overflow**: the kernel, invisibly, or your watermark, visibly
-— pick the one your budget can actually guarantee.
+**Which staging tier should I use?**
+The node's local disk (`/tmp`, NVMe) — the engine default, zero
+configuration, graceful under pressure. It is the right answer on every
+node class we measured; the specialists' chapter has the footnote-level
+exceptions: [Tuning](tuning.md#staging-tier).
 
 **My logs are unreadable interleaved garbage.**
 Per-rank stderr: `2> logs/run.$SLURM_PROCID.err`. One shared stderr across

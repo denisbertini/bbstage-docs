@@ -8,7 +8,7 @@ which is what makes them diagnostic:
 | phase / column | mechanism it measures | if it is large |
 |---|---|---|
 | `watermark` | store-lag backpressure (writers waiting on the drain) | your demand exceeds drain capacity: check `drain-stats`, widen lanes/files, or accept the queue |
-| `spill-alloc` | staging charge site | on tmpfs, multi-second alloc stalls = you are grazing the job's memory fence — lower the watermark or raise the allocation |
+| `spill-alloc` | staging charge site | multi-second alloc stalls = the tier is refusing the load — lower the watermark or check the tier's free space |
 | `spill-copy` | tier bandwidth site | on an XFS/ext4 tier: page-cache writeback throttling — see tier table in [Tuning](tuning.md#staging-tier) |
 | `marshal` / `offsets` / `commit-enqueue` | serialization, bookkeeping, queue hand-off | usually app-side, not I/O |
 
