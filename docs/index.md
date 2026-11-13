@@ -44,7 +44,8 @@ $$
 \underbrace{R \times v_{\text{rank}}}_{\text{ranks per node} \times \text{store rate per rank}}
 $$
 
-Example: 8 ranks/node × 0.24 GiB/s ≈ **2 GiB/s of sustainable checkpoint demand per node**. Stay below this threshold and shared-filesystem slowdowns do not impact runtime; push past it and bbstage makes you wait at checkpoint boundaries — visibly and on purpose, never mid-solve (see [Methodology](methodology.md)).
+Example: 8 ranks/node × 0.24 GiB/s ≈ **2 GiB/s of sustainable checkpoint demand per node**. - **Below this limit:** Shared filesystem slowdowns do not affect your runtime at all.
+- **Above this limit:** bbstage pauses your simulation cleanly at a checkpoint boundary—never mid-calculation—until the background transfer catches up (see [Methodology](methodology.md)).
 
 ## How it works with your code
 
