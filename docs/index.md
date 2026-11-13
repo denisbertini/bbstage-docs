@@ -29,14 +29,22 @@ When your simulation finishes writing a checkpoint and closes the file, you can 
 
 With **bbstage**, the time your simulation spends waiting on I/O depends only on the speed of your compute node's local storage—not the shared cluster filesystem. As long as your checkpoints are spaced out enough for the background threads to keep up, network filesystem slowdowns will not affect your simulation runtime. (In measured terms this is `S / B` — size divided by local storage speed — [the main equation](tuning.md#equation) of the tuning chapter.)
 
-Based on benchmarks on production Lustre clusters (see [Tuning by measurement](tuning.md)):
+Based on benchmarks on production Lustre clusters (see [Tuning by measurement](tuning.md) for job IDs):
 
-| Storage Layer | Speed (as benchmarked here) | Impact on Your Simulation |
-| :--- | :--- | :--- |
-| **Node RAM (`/dev/shm`)** | ~8 – 50 GiB/s | Your simulation sees this speed when writing checkpoints. |
-| **Node Local NVMe SSD** | ~1.9 – 5.5 GiB/s | Your simulation sees this speed when writing checkpoints. |
-| **Shared Cluster Filesystem** | ~0.24 – 0.43 GiB/s per stream | Handled quietly in the background while your physics solver runs. |
-| **Overall Checkpoint Time** | **Up to 3.4× faster** under heavy cluster load | Eliminates long I/O stalls during busy cluster hours (**1.0×** when the cluster is empty). |
+| Storage Layer | Speed (as benchmarked here) | Measured per... | Impact on Your Simulation |
+| :--- | :--- | :--- | :--- |
+| **Node RAM (`/dev/shm`)** | ~8 GiB/s per writing rank, ~50 GiB/s with `StagingPreallocate=on` | **Per rank** — it scales with ranks until memory bandwidth caps the node | Your simulation sees this speed when writing checkpoints. |
+| **Node Local NVMe SSD** | ~1.9 GiB/s (older enterprise drive) – ~5.5 GiB/s (newer) | **Node** — this is the drive's ceiling; a typical 4–8 ranks already saturate it | Your simulation sees this speed when writing checkpoints. |
+| **Shared Cluster Filesystem** | ~0.24 – 0.43 GiB/s, rising to ~0.7 GiB/s for ~1 GiB checkpoint files | **One rank's background stream** — a node's total is ranks × this | Handled quietly in the background while your physics solver runs. |
+| **Overall Checkpoint Time** | **Up to 3.4× faster** under heavy cluster load (**1.0×** when the cluster is empty) | **A full job**: 8 nodes × 32 ranks, 64 GiB per checkpoint (7.7 s vs 26.5 s) | Eliminates long I/O stalls during busy cluster hours. |
+
+**Why you cannot divide these numbers by each other.** The local rows are *per-node ceilings shared by all ranks*; the filesystem row is a *per-rank* rate — and the two never compete for the same moment in time: your simulation always pays the local speed, while the filesystem speed only governs how fast the background copy proceeds. The comparison that matters is a single inequality — *can the background keep up with your checkpoint cadence?*
+
+```
+checkpoint size ÷ interval between checkpoints   ≤   ranks per node × filesystem rate per rank
+```
+
+Example: 8 ranks/node × 0.24 GiB/s ≈ **2 GiB/s of sustainable checkpoint demand per node**. Stay below the line and the shared filesystem's speed and stalls appear *nowhere* in your simulation's runtime. Push past it and bbstage makes you wait at checkpoint boundaries, visibly and on purpose — never mid-solve. In the 3.4× job above, each node demanded a rate the contended store could not serve natively, yet still ran at its local-storage speed because ~1.2 GiB/s/node drained in the background.
 
 *(Note: the filesystem numbers above are facts about the clusters we benchmarked, not universal constants — probe your own cluster the same way, see [Methodology](methodology.md). And if you stage data in `/dev/shm`, the temporary files count toward your job's RAM limit. See [Quickstart](quickstart.md) for guidance on setting memory limits safely.)*
 
