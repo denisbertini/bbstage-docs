@@ -143,7 +143,7 @@ depth; no O_DIRECT/io_uring/SPDK recipe beat the NAND ceiling in any test.
 
 *Footnote — the RAM tier (`BurstBufferPath=/dev/shm`): the local disk is
 the standard and it is not close for practical purposes. A RAM tier
-measures 2.4→3.5 GiB/s per rank (dd-shaped probe, j14042) — a healthy NVMe
+measures 2.4→3.5 GiB/s per rank (dd-shaped probe) — a healthy NVMe
 plus its page cache is already in the same regime, while a RAM tier adds a
 hard job-memory budget and a fatal failure mode (pinned pages; overrun =
 OOM, not slowdown). Keep it for nodes with no usable local disk;
