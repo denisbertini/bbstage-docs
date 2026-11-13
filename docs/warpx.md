@@ -54,7 +54,8 @@ export APPTAINER_CONFIGDIR=/tmp/$USER
 #       engine parameters; parameter > env > default) ─────────────────────
 export BBSTAGE_CLOSE_MODE=staged        # start with "durable" (below) to
                                         # validate semantics before graduating
-export BBSTAGE_STAGING_PREALLOCATE=on   # ~6x faster tmpfs spill, fail-fast on
+export BBSTAGE_STAGING_PREALLOCATE=on   # removes tmpfs page-fault tax (1.4-6x,
+                                        # node-dependent), fail-fast on
                                         # RAM overrun (see budget, section below)
 export BBSTAGE_AGGREGATE=on             # CPU runs with many ranks/node:
                                         # WarpX diags = one file per step per

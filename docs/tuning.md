@@ -27,7 +27,7 @@ controls and measures:
 
 | symbol | what decides it | measured value | audited in |
 |---|---|---|---|
-| $B$ | tier class + preallocation | tmpfs 8–50 GiB/s; NVMe Gen3 1.9, Gen4 5.5 GiB/s | [staging tier](#staging-tier) |
+| $B$ | tier class + preallocation | tmpfs ~2.4→3.5 GiB/s/rank prealloc effect per j14042 (node sums to ~18→26); NVMe Gen3 1.9, Gen4 5.5 GiB/s | [staging tier](#staging-tier) |
 | $C$ | store currency × width × **file size** | per-file: $f/(t_0 + f/r)$, $t_0≈0.24$ s, $r≈910$ MiB/s | [currency](#currency), [lane constant](#lane) |
 | $Q$ | demand vs $C$ over the run | tail $=0$ in every in-envelope arm; 236 GiB absorbed while probes read 1–6 MiB/s (j13606) | [drain-stats](diagnostics.md#drain-stats) |
 | $W$ | operator | default 1 GiB/rank is measured-sane; 64 GiB banks backlog instead | [watermark sizing](#watermark) |
@@ -132,7 +132,7 @@ targets, per-stream client caps), absent from everything measured.
 
 | tier / node | sustained | width scaling | notes |
 |---|---|---|---|
-| `/dev/shm` (tmpfs) | ~8 GiB/s plain, ~50 with `StagingPreallocate=on` (~6×; the ratio is the measured constant, the absolutes depend on how many ranks ran — re-probe per node) | plain = page-fault-limited (fault per 4 KiB on first touch); preallocated = copy-limited | pinned RAM; budget: `(watermark+backlog)×ranks + app`; fallocate converts overrun into a fast explained error |
+| `/dev/shm` (tmpfs) | **re-measured (j14042, dd-shaped, 8 ranks):** 2.4 GiB/s/rank plain → 3.5 with `StagingPreallocate=on` (1.4×); node totals 18 → 26 GiB/s. The engine-dev-era pair "8 → 50, ~6×" did **not** reproduce under a plain probe — the fault tax is constant but the *ratio* depends on the writer's baseline copy speed (dd's double copy vs the engine's single memcpy) and node class | plain = page-fault-limited (~480 ns per 4 KiB first-touch fault); preallocated = copy-limited | pinned RAM; budget: `(watermark+backlog)×ranks + app`; fallocate converts overrun into a fast explained error |
 | Gen3 enterprise NVMe (Intel P4510 class) | **1.9 GiB/s** | none (1≡16 streams, 1M≡4M — NAND-bound) | O_DIRECT ≡ buffered; async I/O cannot help |
 | Gen4 enterprise NVMe (Kingston DC class) | **5.5 GiB/s** | qd1 issue-limited (3.3); 4 streams ≡ 16; bs=4M alone ≈ ceiling | the engine's 8 ranks/node are already 8 streams — at the ceiling without any code change |
 | consumer DRAM-less NVMe | 2.1 → 0.35 GiB/s after a few GiB | — | **SLC cliff**: a second checkpoint can land on it; gate NVMe staging on a sustained-write probe |

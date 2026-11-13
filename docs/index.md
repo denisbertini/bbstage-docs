@@ -33,7 +33,7 @@ Based on benchmarks on production Lustre clusters (see [Tuning by measurement](t
 
 | Storage Layer | Speed (as benchmarked here) | Measured per... | Impact on Your Simulation |
 | :--- | :--- | :--- | :--- |
-| **Node RAM (`/dev/shm`)** | ~8 GiB/s plain, ~50 GiB/s with `StagingPreallocate=on` — the ~6× ratio is the measured fact | **Width-dependent** — an unprepared tmpfs write pays a page fault per 4 KiB (the fault path, not RAM, is the wall); `fallocate` removes it, so the spill runs at memory-copy speed, which then adds up over the node's ranks | Your simulation sees this speed when writing checkpoints. |
+| **Node RAM (`/dev/shm`)** | ~2.4 GiB/s per rank plain → ~3.5 with `StagingPreallocate=on` (measured on one node: 16 GiB in 0.83 s → 0.58 s across 8 ranks; node total ~18 → ~26 GiB/s, job j14042) | **Per rank; node total sums over ranks** — a plain tmpfs write pays a page fault per 4 KiB (the fault path, not RAM, is the wall); `fallocate` removes it, leaving pure memory-copy speed. How much that helps depends on node class and how fast your writer's baseline copy is — measured 1.4× for a `dd`-style probe, up to ~6× for the engine's own spill on the era-old compute nodes: **probe your node** | Your simulation sees this speed when writing checkpoints. |
 | **Node Local NVMe SSD** | ~1.9 GiB/s (PCIe Gen3 enterprise drive, Intel P4510 class) – ~5.5 GiB/s (Gen4, Kingston DC class) | **Node** — drive's sustained-write ceiling, shared by all ranks; 4–8 ranks already saturate it | Your simulation sees this speed when writing checkpoints. (The PCIe generation marks the drive class; the actual limit is the NAND, not the slot — hence "probe your node".) |
 | **Shared Cluster Filesystem** | ~0.24 – 0.43 GiB/s, rising to ~0.7 GiB/s for ~1 GiB checkpoint files | **One rank's background stream** — a node's total is ranks × this | Handled quietly in the background while your physics solver runs. |
 | **Overall Checkpoint Time** | **Up to 3.4× faster** under heavy cluster load (**1.0×** when the cluster is empty) | **A full job**: 8 nodes × 32 ranks, 64 GiB per checkpoint (7.7 s vs 26.5 s) | Eliminates long I/O stalls during busy cluster hours. |
@@ -48,7 +48,7 @@ $$
 
 Example: 8 ranks/node × 0.24 GiB/s ≈ **2 GiB/s of sustainable checkpoint demand per node**. Stay below the line and the shared filesystem's speed and stalls appear *nowhere* in your simulation's runtime. Push past it and bbstage makes you wait at checkpoint boundaries, visibly and on purpose — never mid-solve. In the 3.4× job above, each node demanded a rate the contended store could not serve natively, yet still ran at its local-storage speed because ~1.2 GiB/s/node drained in the background.
 
-*(Note: the filesystem numbers above are facts about the clusters we benchmarked, not universal constants — probe your own cluster the same way, see [Methodology](methodology.md). And if you stage data in `/dev/shm`, the temporary files count toward your job's RAM limit. See [Quickstart](quickstart.md) for guidance on setting memory limits safely.)*
+*(Notes: the filesystem numbers above are facts about the clusters we benchmarked, not universal constants — probe your own cluster the same way, see [Methodology](methodology.md). The staging tier defaults to the node's local disk, which degrades gracefully; the RAM disk `/dev/shm` is faster only in specific node situations and its temporary files count toward your job's RAM limit — an overrun kills the job, so see [Quickstart](quickstart.md) before choosing it.)*
 
 ## How it works with your code
 

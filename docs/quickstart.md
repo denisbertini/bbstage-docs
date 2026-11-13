@@ -29,22 +29,36 @@ act as fallbacks — precedence: engine parameter > environment > default:
 
 ## A recommended staging-mode recipe
 
+**Default tier: `/tmp` (node-local disk / page cache) — the engine
+default, and the right choice almost everywhere.** It needs no
+configuration: spill rides the page cache (which, for small backlogs,
+behaves like RAM), the watermark bounds the backlog, and the local disk
+absorbs whatever spills over — degrading *gracefully* instead of fatally.
+
 ```bash
-export BBSTAGE_STAGING_PREALLOCATE=on     # ~6x faster tmpfs spill; fails fast on RAM overrun
 BBSTAGE_TIMING=1 srun ... ./your_app      # per-rank timing + drain-stats on stderr
 ```
 
-with `BurstBufferPath=/dev/shm` **only when the job's memory allocation
-covers**:
+**Opt into `/dev/shm` only when the node justifies it** — no local NVMe,
+a weak sustained one (~1.9 GiB/s enterprise Gen3, or a consumer drive
+with a measured SLC cliff), or genuinely sustained multi-GiB-per-step
+spills beyond what the page cache can hide — **and** when the job's
+memory allocation covers:
 
 ```
 (watermark + backlog) × ranks_per_node + application_footprint
 ```
 
-tmpfs pages are *pinned RAM*, not reclaimable page cache — an overrun OOMs
-(`StagingPreallocate` turns that into a fast, explained `fallocate`
-failure instead). On memory-tight jobs stay on `/tmp`: its page cache
-degrades gracefully. See [Tuning](tuning.md#staging-tier).
+```bash
+export BBSTAGE_STAGING_PREALLOCATE=on     # tmpfs-only: strips the spill's page-fault
+                                          # tax (1.4-6x, node-dependent) and turns a
+                                          # RAM overrun into a fast, explained fallocate
+                                          # error instead of an OOM
+```
+
+tmpfs pages are *pinned RAM*, not reclaimable page cache — an overrun
+OOMs. That failure-mode asymmetry, not raw speed, is why `/tmp` is the
+default recommendation. See [Tuning](tuning.md#staging-tier).
 
 ## Reading the output
 
