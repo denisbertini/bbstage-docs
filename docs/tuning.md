@@ -127,7 +127,7 @@ lane rate, job j13606):
 | k=8 | 773 MiB/s | 2.0 s/chkpt, 4× variance | 0 |
 
 Flat in k, taxes the writer: **keep `DrainStreams=1`.** One large
-sequential stream per file already amortizes the fixed cost — the k knob
+sequential stream per file already amortizes the fixed cost — the k parameter
 remains only for stores with genuine per-file throttles (single-OST
 targets, per-stream client caps), absent from everything measured.
 

@@ -1,6 +1,6 @@
 # Parameters
 
-Every knob below can be set two ways:
+Every parameter below can be set two ways:
 
 1. **from your code** — `io.SetParameters({...})` (C++/Fortran/Python); or
 2. **by environment variable** — `BBSTAGE_*` names, listed in the
@@ -9,7 +9,7 @@ Every knob below can be set two ways:
    never calls `SetParameters`, so the environment is the only channel
    that reaches it.
 
-If the same knob is set both ways, the more specific setting wins —
+If the same parameter is set both ways, the more specific setting wins —
 engine parameter, then environment, then built-in default.
 
 <div class="param-names" markdown="1">
@@ -42,7 +42,7 @@ engine parameter, then environment, then built-in default.
 ## Full reference
 
 The complete engine reference — every accepted parameter including the
-dormant knobs, protocol semantics, and limitations — lives in the fork:
+dormant ones, protocol semantics, and limitations — lives in the fork:
 [`BBSTAGE.md`](https://github.com/denisbertini/ADIOS2/blob/master/BBSTAGE.md)
 and the user guide
 ([`engines/bbstage.rst`](https://github.com/denisbertini/ADIOS2/blob/master/docs/user_guide/source/engines/bbstage.rst)),

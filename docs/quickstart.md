@@ -26,13 +26,13 @@ form, documented with its full semantics in
 | Environment | Parameter (definition) |
 |---|---|
 | `BBSTAGE_CLOSE_MODE` (`durable`/`staged`) | [`CloseMode`](parameters.md) — what `Close()` waits for |
-| `BBSTAGE_STAGING_WATERMARK_MB` | [`StagingWatermarkMB`](parameters.md) — per-rank backlog cap, the backpressure knob |
+| `BBSTAGE_STAGING_WATERMARK_MB` | [`StagingWatermarkMB`](parameters.md) — per-rank backlog cap, controls backpressure |
 | `BBSTAGE_AGGREGATE` (`on`/`off`) | [`Aggregate`](parameters.md) — node co-write; CPU-fat runs only (GPU: leave off) |
 | `BBSTAGE_TIMING` (`1`) | diagnostics only — per-phase timings + drain-stats on stderr |
 
 </div>
 
-Rarely-needed knobs (`DrainStreams`, `StagingPreallocate`) deliberately
+Rarely-needed parameters (`DrainStreams`, `StagingPreallocate`) deliberately
 stay out of a quick start and out of the parameter table above: both ship
 dormant — one was measured *neutral and writer-taxing* at any value above
 default (verdict: [Tuning](tuning.md#drain-k-a-measured-demotion)), the
