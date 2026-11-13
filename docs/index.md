@@ -27,7 +27,7 @@ When your simulation finishes writing a checkpoint and closes the file, you can 
 
 ## What kind of speedup can you expect?
 
-With **bbstage**, the time your simulation spends waiting on I/O depends only on the speed of your compute node's local storage—not the shared cluster filesystem. As long as your checkpoints are spaced out enough for the background threads to keep up, network filesystem slowdowns will not affect your simulation runtime. (In measured terms this is `S / B` — size divided by local storage speed — [the main equation](tuning.md#equation) of the tuning chapter.)
+With **bbstage**, the time your simulation spends waiting on I/O depends only on the speed of your compute node's local storage—not the shared cluster filesystem. As long as your checkpoints are spaced out enough for the background threads to keep up, network filesystem slowdowns will not affect your simulation runtime. (In measured terms this is `S / B` — size divided by local storage speed — [the balance equation](tuning.md#balance) of the tuning chapter.)
 
 Based on benchmarks on production Lustre clusters (see [Tuning by measurement](tuning.md) for job IDs):
 

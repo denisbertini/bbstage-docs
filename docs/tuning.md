@@ -5,7 +5,7 @@
       deployments, 2026). Constants here are **site facts, not universal
       laws** — the transferable part is the procedure: [Methodology](methodology.md).
 
-## The main equation {: #equation}
+## The balance equation {: #balance}
 
 One equation states what the engine costs the application, and every other
 section of this page is a coefficient or an audit of one of its symbols.
