@@ -44,6 +44,8 @@ $$
 \underbrace{R \times v_{\text{rank}}}_{\text{ranks per node} \times \text{store rate per rank}}
 $$
 
+where $S$ is the checkpoint data written **per node** (all its ranks together) and $\Delta t$ is the time between checkpoints — so the left side is the average data rate your checkpoints demand, and the right side is the rate the background can deliver on that node.
+
 Example: 8 ranks/node × 0.24 GiB/s ≈ **2 GiB/s of sustainable checkpoint demand per node**. - **Below this limit:** Shared filesystem slowdowns do not affect your runtime at all.
 - **Above this limit:** bbstage pauses your simulation cleanly at a checkpoint boundary—never mid-calculation—until the background transfer catches up (see [Methodology](methodology.md)).
 - **Two different clocks:** this limit is a long-run *average*, not the speed of your checkpoint write. The write itself is a burst at node-local NVMe speed (that is exactly what the fast local disk buys: a 16 GiB checkpoint pauses the run for ~3 s at 5.5 GiB/s, not the minutes the filesystem would demand); the drain then carries the burst away slowly over the compute time until the next checkpoint. The buffer is what turns fast bursts into a sustainable average.

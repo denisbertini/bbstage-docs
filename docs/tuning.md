@@ -10,7 +10,10 @@
 One equation states what the engine costs the application, and every other
 section of this page is a coefficient or an audit of one of its symbols.
 Per rank, per checkpoint of size $S$, with spill bandwidth $B$ to the
-staging tier, backlog $Q$, watermark $W$, and store drain capacity $C$:
+staging tier, backlog $Q$, watermark $W$, and store drain capacity $C$
+(throughout this chapter $S$ is *per rank*; the home page's keep-up
+inequality states the same balance at node scope, where $S$ is multiplied
+by the node's rank count):
 
 $$
 t_{\text{ckpt}} \;=\; \underbrace{\frac{S}{B}}_{\text{spill — what you always pay}}
