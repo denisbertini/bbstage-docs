@@ -21,6 +21,8 @@ These are the ones anyone needs; every engine parameter also has an env
 form, documented with its full semantics in
 [Parameters](parameters.md):
 
+<div class="param-names" markdown="1">
+
 | Environment | Parameter (definition) |
 |---|---|
 | `BBSTAGE_CLOSE_MODE` (`durable`/`staged`) | [`CloseMode`](parameters.md) — what `Close()` waits for |
@@ -28,7 +30,7 @@ form, documented with its full semantics in
 | `BBSTAGE_AGGREGATE` (`on`/`off`) | [`Aggregate`](parameters.md) — node co-write; CPU-fat runs only (GPU: leave off) |
 | `BBSTAGE_TIMING` (`1`) | diagnostics only — per-phase timings + drain-stats on stderr |
 
-{: .param-names}
+</div>
 
 Rarely-needed knobs (`DrainStreams`, `StagingPreallocate`) deliberately
 stay out of a quick start and out of the parameter table above: both ship

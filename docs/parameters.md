@@ -1,8 +1,18 @@
 # Parameters
 
-Set via `io.SetParameters({...})`; the `BBSTAGE_*` environment fallbacks
-(see [Quickstart](quickstart.md)) exist for middleware paths. Precedence:
-**parameter > environment > default**.
+Every knob below can be set two ways:
+
+1. **from your code** — `io.SetParameters({...})` (C++/Fortran/Python); or
+2. **by environment variable** — `BBSTAGE_*` names, listed in the
+   [Quickstart](quickstart.md). These exist for the middleware case:
+   WarpX (or anything else reaching the engine through openPMD-api)
+   never calls `SetParameters`, so the environment is the only channel
+   that reaches it.
+
+If the same knob is set both ways, the more specific setting wins —
+engine parameter, then environment, then built-in default.
+
+<div class="param-names" markdown="1">
 
 | Parameter | Default | Meaning |
 |---|---|---|
@@ -14,9 +24,11 @@ Set via `io.SetParameters({...})`; the `BBSTAGE_*` environment fallbacks
 | `Aggregate` | `off` | `on`: node-aggregated co-write drain — one `data.<node>` sub-file per node co-written by its ranks at pre-assigned disjoint offsets (one store client per rank, one file per node). Store file count scales with nodes, not ranks. Must be uniform across ranks. Rationale and the two Lustre mechanisms it needed: [Semantics](semantics.md#aggregate). **Keep `off` on GPU nodes** (one rank per GPU): with few ranks, file count is never the problem, every rank is already an independent store client, and co-write coordination would be pure overhead — the split default is the fastest staging path there. It earns its keep on CPU-fat nodes (32–64 ranks/node). |
 | `StagingSync` | `false` | `fsync` the staging file inside `EndStep`; durability is always `bbstage.final` on the final store. |
 
-{: .param-names}
+</div>
 
 ## What each default protects you from
+
+<div class="param-names" markdown="1">
 
 | default | failure mode it prevents |
 |---|---|
@@ -25,10 +37,13 @@ Set via `io.SetParameters({...})`; the `BBSTAGE_*` environment fallbacks
 | `Aggregate=off` | co-write coordination cost when file count is not the problem |
 | `CommitTimeoutSecs=300` | infinite hang on a dead peer rank or a wedged store |
 
-{: .param-names}
+</div>
 
 ## Full reference
 
-The complete protocol semantics and limitations live in the fork's user
-guide: [`docs/user_guide/source/engines/bbstage.rst`](https://github.com/denisbertini/ADIOS2)
+The complete engine reference — every accepted parameter including the
+dormant knobs, protocol semantics, and limitations — lives in the fork:
+[`BBSTAGE.md`](https://github.com/denisbertini/ADIOS2/blob/master/BBSTAGE.md)
+and the user guide
+([`engines/bbstage.rst`](https://github.com/denisbertini/ADIOS2/blob/master/docs/user_guide/source/engines/bbstage.rst)),
 alongside the engine source.
