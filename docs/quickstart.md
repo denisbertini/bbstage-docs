@@ -31,10 +31,13 @@ form, documented with its full semantics in
 {: .param-names}
 
 Rarely-needed knobs (`DrainStreams`, `StagingPreallocate`) deliberately
-stay out of a quick start: both ship dormant — one was measured *neutral
-and writer-taxing* at any value above default, the other is a no-op on the
-standard `/tmp` tier. Their definitions and verdicts:
-[Parameters](parameters.md), [Tuning](tuning.md#drain-k-a-measured-demotion).
+stay out of a quick start and out of the parameter table above: both ship
+dormant — one was measured *neutral and writer-taxing* at any value above
+default (verdict: [Tuning](tuning.md#drain-k-a-measured-demotion)), the
+other applies only to the RAM-tier footnote scenario
+([Tuning](tuning.md#staging-tier)). Complete engine reference, including
+these two, lives in the fork's
+[`BBSTAGE.md`](https://github.com/denisbertini/ADIOS2/blob/master/BBSTAGE.md).
 
 ## A recommended staging-mode recipe
 
