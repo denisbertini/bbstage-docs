@@ -16,6 +16,8 @@ Set via `io.SetParameters({...})`; the `BBSTAGE_*` environment fallbacks
 | `StagingPreallocate` | `off` | `on`: `fallocate` each staging file at `EndStep` — meaningful **only on a RAM-backed tier** (strips its page-fault tax; see the tier footnote in [Tuning](tuning.md#staging-tier)); a budget overrun then fails fast before partial writes. A measured no-op on disk-backed tiers (warned, ignored). |
 | `StagingSync` | `false` | `fsync` the staging file inside `EndStep`. Meaningless on RAM-backed tiers (no device to flush); durability is always `bbstage.final` on the final store. |
 
+{: .param-names}
+
 ## What each default protects you from
 
 | default | failure mode it prevents |
@@ -25,6 +27,8 @@ Set via `io.SetParameters({...})`; the `BBSTAGE_*` environment fallbacks
 | `DrainStreams=1` | writer tax from stream fan-out that scales nothing |
 | `Aggregate=off` | co-write coordination cost when file count is not the problem |
 | `StagingPreallocate=off` | behavior change on disk-backed tiers (no-op anyway) |
+
+{: .param-names}
 
 ## Full reference
 

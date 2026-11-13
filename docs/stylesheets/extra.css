@@ -1,0 +1,13 @@
+/* Parameter tables: keep the identifier column intact instead of
+   clipping long names (Material sets table code to nowrap by default,
+   so a wide "meaning" column squeezes the first one). */
+table.param-names td:first-child code,
+table.param-names th:first-child {
+  white-space: nowrap;
+}
+
+/* Safety net everywhere else: let long inline code in tables wrap at
+   the cell edge rather than overflow silently. */
+.md-typeset table:not([class]) code {
+  overflow-wrap: anywhere;
+}

@@ -28,6 +28,8 @@ form, documented with its full semantics in
 | `BBSTAGE_AGGREGATE` (`on`/`off`) | [`Aggregate`](parameters.md) — node co-write; CPU-fat runs only (GPU: leave off) |
 | `BBSTAGE_TIMING` (`1`) | diagnostics only — per-phase timings + drain-stats on stderr |
 
+{: .param-names}
+
 Rarely-needed knobs (`DrainStreams`, `StagingPreallocate`) deliberately
 stay out of a quick start: both ship dormant — one was measured *neutral
 and writer-taxing* at any value above default, the other is a no-op on the
