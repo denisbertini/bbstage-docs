@@ -30,7 +30,7 @@ Your I/O wait time depends on local storage speed rather than network congestion
 | Storage Layer | Benchmarked Speed | Measured per... | Impact on Your Simulation |
 | :--- | :--- | :--- | :--- |
 | **Node-local NVMe (`/tmp`)** | **~1.9 GiB/s** (PCIe Gen3) to **~5.5 GiB/s** (PCIe Gen4); bursts hit memory speed via page cache. | **Node** (shared by all ranks; 4–8 ranks saturate the drive). | The speed your simulation experiences when writing checkpoints. |
-| **Shared Cluster Filesystem** | **~0.24 – 0.43 GiB/s** (up to ~0.7 GiB/s for ~1 GiB files). | **Rank** (total node rate scales with rank count). | Handled quietly in the background. |
+| **Shared Cluster Filesystem** | **~0.24 – 0.43 GiB/s** (up to ~0.7 GiB/s for ~1 GiB files). | **Rank** (total node rate scales with rank count, up to the store's saturation ceiling). | Handled quietly in the background. |
 | **Overall Checkpoint Time** | **Up to 3.4× faster** under heavy load (**1.0×** on idle clusters). | **Full job** (8 nodes × 32 ranks, 64 GiB: 7.7 s vs 26.5 s). | Eliminates multi-minute I/O hangs. |
 
 * **Hardware variance:** Drive ceilings depend on NAND flash rather than slot generation; probe your specific node.
