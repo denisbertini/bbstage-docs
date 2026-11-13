@@ -29,8 +29,13 @@ then it barely matters. [Tuning](tuning.md#watermark-sizing).
 **Should I use `Aggregate=on`?**
 When store *file count / MDS load* is your constraint (many ranks × many
 files) — yes, with eyes open: it needs the leader-`ftruncate` and
-chunked-close mechanisms (both built-in). If file count is not the problem,
-the default stays out of your way. [Semantics](semantics.md#aggregate).
+chunked-close mechanisms (both built-in). **On GPU nodes: keep the split
+default (`off`).** One MPI rank per GPU means only a handful of writers
+per node — file count stays small, each rank is already its own store
+client, and the co-write coordination buys nothing you need; the everyone-
+writes default is the faster staging path. `Aggregate=on` is for CPU-fat
+nodes (32–64 ranks/node) where the R×S file storm is real.
+[Semantics](semantics.md#aggregate).
 
 **Should `DrainStreams` be > 1?**
 No, unless you can point at a per-*file* throughput throttle on your

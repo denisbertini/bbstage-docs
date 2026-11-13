@@ -56,9 +56,14 @@ export BBSTAGE_CLOSE_MODE=staged        # start with "durable" (below) to
                                         # validate semantics before graduating
 export BBSTAGE_STAGING_PREALLOCATE=on   # ~6x faster tmpfs spill, fail-fast on
                                         # RAM overrun (see budget, section below)
-export BBSTAGE_AGGREGATE=on             # WarpX diags = one file per step per
+export BBSTAGE_AGGREGATE=on             # CPU runs with many ranks/node:
+                                        # WarpX diags = one file per step per
                                         # quantity: the file-count case where
-                                        # data.<node> co-write earns its keep
+                                        # data.<node> co-write earns its keep.
+                                        # GPU nodes (one rank per GPU): keep
+                                        # the split default (off) — few ranks,
+                                        # no file storm, per-rank writes are
+                                        # the fastest staging path.
 export BBSTAGE_STAGING_WATERMARK_MB=1024  # measured-sane default; see Tuning
 export BBSTAGE_TIMING=1                 # drain-stats + phase timings on stderr
 

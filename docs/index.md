@@ -44,7 +44,8 @@ Based on benchmarks on production Lustre clusters (see [Tuning by measurement](t
 
 * **Zero code changes:** If your simulation already uses ADIOS2 (or middleware like **openPMD-api**, used by WarpX and PIConGPU), you can enable **bbstage** by changing the engine name — in your own ADIOS2 calls or XML/JSON configuration, or, for openPMD-based codes, in the middleware's config file (see the [WarpX recipe](warpx.md)). Tuning parameters can also travel as environment variables.
 * **No extra daemons to launch:** Everything runs automatically inside your MPI job's existing processes.
-* **Node aggregation (`Aggregate=on`):** For large runs using many MPI ranks per node, **bbstage** can automatically combine outputs on each node to avoid overwhelming the shared filesystem with thousands of small files.
+* **Node aggregation (`Aggregate=on`):** For large CPU runs using many MPI ranks per node, **bbstage** can automatically combine outputs on each node to avoid overwhelming the shared filesystem with thousands of small files.
+* **On GPU nodes, use the default mode:** GPU runs have few MPI ranks (typically one per GPU), so the default everyone-writes mode is already the fastest: each rank stages and drains in parallel on its own, with no coordination overhead. Leave `Aggregate` off — the file-storm problem it solves does not exist at one rank per GPU.
 
 ## Background & Related Tools
 

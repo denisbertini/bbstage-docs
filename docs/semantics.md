@@ -76,6 +76,22 @@ they are why an earlier aggregate design drained at single-client speed):
    which re-drains it idempotently (same bytes, same offsets). Close cost
    is bounded by one chunk (measured: 1 ms).
 
+**When split (everyone-writes) is the right mode.** `Aggregate` solves a
+file-count problem that scales with ranks-per-node — and GPU runs pin ranks
+to GPUs (4–8 per node on WarpX/PIConGPU), where the R×S file storm never
+materializes while the coordination co-write requires (offset
+pre-assignment, leader `ftruncate` each step, per-step rendezvous of the
+node's ranks) is paid unconditionally. In split mode — the default
+(`Aggregate=off`) — every rank stages and drains its own files on its own
+store client: drain parallelism comes free at any rank count, since
+concurrent per-rank writers are exactly what feeds the tier's and the
+store's queue depth ([Tuning](tuning.md#staging-tier)), and the ranks share
+no synchronization point at all. On GPU nodes that is the fastest staging
+path; leave `Aggregate` off. (Caveat in house style: the aggregate numbers
+on this page were measured on CPU nodes at 32–64 ranks/node; the GPU-node
+case is a mechanism-level argument awaiting its first probe —
+[Methodology](methodology.md) applies.)
+
 ## Limitations
 
 * Write-only engine; the read side is the stock `bp5` engine.
